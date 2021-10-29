@@ -1,5 +1,7 @@
-import os, uuid, string, random, threading
-from queue import Queue
+import os, random, threading, time, json, colorama, subprocess, string
+clear = lambda: subprocess.call('cls||clear', shell=True)
+
+colorama.init()
 
 try:
     import requests
@@ -26,61 +28,71 @@ class THRIDING():
     def join(self):
         for thread_join in self.threads_list:
             thread_join.join()
-
+class DESIGN():
+    WHITE = '\x1b[1;37;40m'
+    YELLOW = '\x1b[1;33;40m'
+    RED = '\x1b[1;31;40m'
+    BLUE = '\x1b[36m\x1b[40m'
+    GREEN = '\x1b[32m\x1b[40m'
+    greenplus = f"{WHITE}[ {GREEN}+{WHITE} ]"
+    blueplus = f"{WHITE}[ {BLUE}+{WHITE} ]"
+    redminus = f"{WHITE}[ {RED}-{WHITE} ]"
+    
+class SETTINGS():
+    try:
+        settings = json.loads(open("settings.txt", "r").read())
+    except:
+        open("settings.txt", "w").write(('{"settings" : {\n\t"NAME": "X N C E", \n\t"THREADS": "100",\n\t"MSG": "Claimed",\n\t"PROXY_MODE": "1",\n\t"WEBHOOK": ""\n}}'))
+        settings = json.loads(open("settings.txt", "r").read())
+    name = settings["settings"]["NAME"]
+    threads = int(settings["settings"]["THREADS"])
+    msg = settings["settings"]["MSG"]
+    proxy_mode = settings["settings"]["PROXY_MODE"]
+    webhook = settings["settings"]["WEBHOOK"]
+    bannerr = requests.get(f'http://artii.herokuapp.com/make?text={name}').text
+    print(f"{DESIGN.RED}{bannerr}")
+    print(f"{DESIGN.greenplus} Successfully Load {DESIGN.BLUE}settings.txt\n")
+    try:
+        my_list = list(open("list.txt","r").read().split("\n"))
+        print(f"{DESIGN.greenplus} Successfully Load {DESIGN.BLUE}list.txt\n")
+    except:
+        print(f"{DESIGN.redminus} Failed Load {DESIGN.RED}list.txt ", end="")
+        input()
+        exit()
+    try:
+        proxies = list(open("proxies.txt","r").read().split("\n"))
+        print(f"{DESIGN.greenplus} Successfully Load {DESIGN.BLUE}proxies.txt\n")
+    except:
+        print(f"{DESIGN.redminus} Failed Load {DESIGN.RED}proxies.txt ", end="")
+        input()
+        exit()
+    try:
+        accounts = list(open("accounts.txt","r").read().split("\n"))
+        print(f"{DESIGN.greenplus} Successfully Load {DESIGN.BLUE}accounts.txt\n")
+    except:
+        print(f"{DESIGN.redminus} Failed Load {DESIGN.RED}accounts.txt ", end="")
+        input()
+        exit()
 class Xnce():
     def __init__(self):
         self.done, self.error, self.run, self.turn = 0, 0, True, 0
-        try:
-            self.users = list(open("list.txt","r").read().split("\n"))
-        except:
-            print("[-] list.txt is missing")
-            input()
-            exit()
-        try:
-            self.proxies = list(open("proxies.txt","r").read().split("\n"))
-        except:
-            print("[-] proxies.txt is missing")
-            input()
-            exit()
-        try:
-            self.accounts = list(open("accounts.txt","r").read().split("\n"))
-        except:
-            print("[-] accounts.txt is missing")
-            input()
-            exit()
-        try:
-            self.webhook = open("webhook.txt","r").read()
-            self.dis = True
-        except:
-            print("[-] webhook.txt is missing")
-        
-        self.UQue = Queue()
-        for x in self.users:
-            self.UQue.put(x)
-        
-        #print(f"[+] list: {len(self.users)} / proxies: {len(self.proxies)} / accounts: {len(self.accounts)}")
+        self.lock = threading.Lock()
     def claimed(self, username, sessionid):
-        print(f"\r[+] claimed: {username}")
-        open(f"{username}.txt","a").write(f"username: {username}\nsessionid: {sessionid}")
+        print(f"\r{DESIGN.blueplus} {SETTINGS.msg} {DESIGN.BLUE}@{username}\n")
+        open(f"{username}.txt","a").write(f"\nusername: {username}\nsessionid: {sessionid}\nattempts: {self.done}\n")
     def discord(self, username):
         if self.dis:
             if len(username) <= 4:
-                timenow = requests.get("http://worldclockapi.com/api/json/est/now").text
-                data = {
-                    "embeds": [{
-                        "description": f"username: {username}", 
-                        "color": 1600899, 
-                        "author": {"name": "xnce", "icon_url": "https://cdn.discordapp.com/attachments/775671093662449697/870058819902910514/image0.jpg"}, 
-                        "timestamp": timenow[30:52]}]}
-                req = requests.post(self.webhook, json=data)
-                if req.status_code != 204:
-                    print(f"\n[-] Discord: {req}")
+                pass
     def random_proxy(self):
-        prox = random.choice(self.proxies)
-        proxy = {"http": prox, "https": prox}
+        prox = random.choice(SETTINGS.proxies)
+        if SETTINGS.proxy_mode=="1":
+            proxy = {"http": prox, "https": prox}
+        else:
+            proxy = {f"http":f"socks4://{prox}","https":f"socks4://{prox}"}
         return proxy
-    def check(self, username):
-        for sessionid in self.accounts:
+    def set_username(self, username):
+        for sessionid in SETTINGS.accounts:
             ep = {
                 "url": "https://i.instagram.com/api/v1/accounts/set_username/", 
                 "head": {"user-agent": f"Instagram 150.0.0.0.000 Android (29/10; 300dpi; 720x1440; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}/{''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; en_GB;)", "cookie": f"sessionid={sessionid}"}, 
@@ -99,11 +111,11 @@ class Xnce():
                     self.run = False
             elif req.status_code==400:
                 self.done += 1
-                print(f"\r[+] Done: {self.done} Error: {self.error}", end="")
                 self.turn += 1
+                os.system(f"title Attempts : {self.done} / Ratelimt : {self.error} / R/s : {self.Rs} / Acc : {len(SETTINGS.accounts)} / @ : {len(SETTINGS.my_list)}")
             elif req.status_code==429:
                 self.error += 1
-                print(f"\r[+] Done: {self.done} Error: {self.error}", end="")
+                os.system(f"title Attempts : {self.done} / Ratelimt : {self.error} / R/s : {self.Rs} / Acc : {len(SETTINGS.accounts)} / @ : {len(SETTINGS.my_list)}")
             elif req.status_code==403:
                 self.accounts.remove(sessionid)
                 if len(self.accounts) < 1:
@@ -111,30 +123,32 @@ class Xnce():
             else:
                 #print(req.text, req.status_code)
                 pass
+    def rs(self):
+        before = self.done
+        time.sleep(1)
+        after = self.done
+        self.Rs = int(after - before)
     def main(self):
-        while not self.UQue.empty():
-            try:
-                my_user = self.UQue.get()
-                self.check(my_user)
-                self.UQue.task_done()
-            except:
-                pass
-    def main2(self):
         while self.run:
             try:
-                my_user = self.users[self.turn]
+                my_user = SETTINGS.my_list[self.turn]
             except:
                 self.turn = 0
             try:
-                self.check(my_user)
+                self.set_username(my_user)
             except:
                 pass
+            self.rs()
+SETTINGS()
 x = Xnce()
-th = int(input("[+] Threads : "))
-input("[+] Enter To Start: ")
-t = THRIDING(x.main2)
-t.gen(th)
+print(f"{DESIGN.greenplus} Enter To Start: ", end="")
+input()
+clear()
+print(f"{DESIGN.RED}{SETTINGS.bannerr}")
+t = THRIDING(x.main)
+t.gen(SETTINGS.threads)
 t.start()
 t.join()
-input("[-] Enter To Exit: ")
+print(f"{DESIGN.redminus} Enter To Exit: ", end="")
+input()
 exit()
