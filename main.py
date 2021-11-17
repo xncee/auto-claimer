@@ -1,4 +1,6 @@
 import os, random, threading, time, json, colorama, subprocess, string
+import tkinter
+from tkinter import messagebox
 clear = lambda: subprocess.call('cls||clear', shell=True)
 
 colorama.init()
@@ -8,7 +10,9 @@ try:
 except ImportError:
     os.system("pip install requests")
     import requests
-
+messagebox.showwarning("xnce", "Claimed: @xnce\nR/s: 10")
+print("test")
+input()
 class THRIDING():
     def __init__(self, target):
         self.threads_list = []
@@ -42,12 +46,11 @@ class SETTINGS():
     try:
         settings = json.loads(open("settings.txt", "r").read())
     except:
-        open("settings.txt", "w").write(('{"settings" : {\n\t"NAME": "X N C E", \n\t"THREADS": "100",\n\t"MSG": "Claimed",\n\t"PROXY_MODE": "1",\n\t"WEBHOOK": ""\n}}'))
+        open("settings.txt", "w").write(('{"settings" : {\n\t"NAME": "X N C E", \n\t"THREADS": "500",\n\t"MSG": "Claimed",\n\t"WEBHOOK": ""\n}}'))
         settings = json.loads(open("settings.txt", "r").read())
     name = settings["settings"]["NAME"]
     threads = int(settings["settings"]["THREADS"])
     msg = settings["settings"]["MSG"]
-    proxy_mode = settings["settings"]["PROXY_MODE"]
     webhook = settings["settings"]["WEBHOOK"]
     bannerr = requests.get(f'http://artii.herokuapp.com/make?text={name}').text
     print(f"{DESIGN.RED}{bannerr}")
@@ -75,51 +78,54 @@ class SETTINGS():
         exit()
 class Xnce():
     def __init__(self):
-        self.done, self.error, self.run, self.turn = 0, 0, True, 0
+        self.done, self.error, self.turn, self.run = 0, 0, 0, True
         self.lock = threading.Lock()
+        self.rq = requests.Session()
     def claimed(self, username, sessionid):
         print(f"\r{DESIGN.blueplus} {SETTINGS.msg} {DESIGN.BLUE}@{username}\n")
         open(f"{username}.txt","a").write(f"\nusername: {username}\nsessionid: {sessionid}\nattempts: {self.done}\nR/s: {self.Rs}\n")
     def discord(self, username):
-        if self.dis:
-            if len(username) <= 4:
-                pass
+        pass
     def random_proxy(self):
         prox = random.choice(SETTINGS.proxies)
-        if SETTINGS.proxy_mode=="1":
-            proxy = {"http": prox, "https": prox}
-        else:
-            proxy = {f"http":f"socks4://{prox}","https":f"socks4://{prox}"}
+        proxy = {"http": prox, "https": prox}
         return proxy
-    def set_username(self, username):
-        for sessionid in SETTINGS.accounts:
+    def remove_user(self, username):
+        SETTINGS.my_list.remove(username)
+        #print(SETTINGS.my_list)
+    def remove_session(self, sessionid):
+        SETTINGS.accounts.remove(sessionid)
+    def check(self):
+        if len(SETTINGS.my_list) < 1:
+            self.run = False
+            print(f"{DESIGN.redminus} {DESIGN.WHITE}run = {DESIGN.RED}False{DESIGN.WHITE} , No Users\n")
+        elif len(SETTINGS.accounts) < 1:
+            self.run = False
+            print(f"{DESIGN.redminus} {DESIGN.WHITE}run = {DESIGN.RED}False{DESIGN.WHITE} , No Accounts\n")
+    def set_username(self, username, sessionid):
             ep = {
                 "url": "https://i.instagram.com/api/v1/accounts/set_username/", 
                 "head": {"user-agent": f"Instagram 150.0.0.0.000 Android (29/10; 300dpi; 720x1440; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}/{''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; {''.join(random.choices(string.ascii_lowercase+string.digits, k = 16))}; en_GB;)", "cookie": f"sessionid={sessionid}"}, 
                 "data": {"username": username}
             }
-            req = requests.post(ep.get("url"), headers=ep.get("head"), data=ep.get("data"), proxies=self.random_proxy())
+            req = self.rq.post(ep.get("url"), headers=ep.get("head"), data=ep.get("data"), proxies=self.random_proxy())
             #print(req.text, req.status_code)
             if '"username"' in req.text and req.status_code==200:
                 self.claimed(username, sessionid)
                 self.discord(username)
-                self.users.remove(username)
-                self.accounts.remove(sessionid)
-                if len(self.users) < 1:
-                    self.run = False
-                if len(self.accounts) < 1:
-                    self.run = False
+                self.remove_session(sessionid)
+                self.remove_user(username)
+                os.system(f"title Attempts : {self.done} / Ratelimt : {self.error} / R/s : {self.Rs} / Acc : {len(SETTINGS.accounts)} / @ : {len(SETTINGS.my_list)}")
+                time.sleep(0.1)
             elif "isn't" in req.text:
+                #print(username, self.turn)
                 self.done += 1
-                self.turn += 1
                 os.system(f"title Attempts : {self.done} / Ratelimt : {self.error} / R/s : {self.Rs} / Acc : {len(SETTINGS.accounts)} / @ : {len(SETTINGS.my_list)}")
             elif req.status_code==429:
                 self.error += 1
                 os.system(f"title Attempts : {self.done} / Ratelimt : {self.error} / R/s : {self.Rs} / Acc : {len(SETTINGS.accounts)} / @ : {len(SETTINGS.my_list)}")
             elif req.status_code==403:
-                self.accounts.remove(sessionid)
-                if len(self.accounts) < 1:
-                    self.run = False
+                self.remove_session(sessionid)
             else:
                 #print(req.text, req.status_code)
                 pass
@@ -130,16 +136,22 @@ class Xnce():
         self.Rs = int(after - before)
     def main(self):
         while self.run:
+            self.check()
             try:
                 my_user = SETTINGS.my_list[self.turn]
+                self.turn += 1
             except:
                 self.turn = 0
+                my_user = SETTINGS.my_list[self.turn]
             try:
-                self.set_username(my_user)
+                sessionid = random.choice(SETTINGS.accounts)
+            except:
+                pass
+            try:
+                self.set_username(my_user, sessionid)
             except:
                 pass
             self.rs()
-SETTINGS()
 x = Xnce()
 print(f"{DESIGN.greenplus} Enter To Start: ", end="")
 input()
